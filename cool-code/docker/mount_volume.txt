@@ -1,0 +1,1 @@
+docker run -d -p 8082:80 --name runoob-nginx-test-web -v E:/PHPSpace/docker/nginx/www:/usr/share/nginx/html 

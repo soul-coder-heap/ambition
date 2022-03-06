@@ -1,0 +1,4 @@
+sudo ping -S 192.168.1.6 -c 3 110.242.68.3 # mac pro
+sudo tcpdump -i any tcp and host 110.242.68.3 and port 80 -w http.pcap
+sudo tcpdump -D # 查看网口
+ifconfig #查网口
