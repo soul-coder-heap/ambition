@@ -13,9 +13,18 @@ typedef struct {
     float score;
 } Student;
 
+
+typedef struct {
+    int frameNumber;       // 帧号
+    size_t frameSize;      // 帧数据大小
+    unsigned char* frameData; // 帧数据
+} VideoFrame;
+
+
 // 定义协议的消息类型
 enum MessageType {
     TYPE_STUDENT = 1, // 学生类型
+    TYPE_VIDEO = 2,   // 视频类型
     // 可以定义其他类型...
 };
 

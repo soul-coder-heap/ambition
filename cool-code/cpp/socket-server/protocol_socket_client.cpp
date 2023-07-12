@@ -13,9 +13,18 @@ typedef struct {
     float score;
 } Student;
 
+
+typedef struct {
+    int frameNumber;       // 帧号
+    size_t frameSize;      // 帧数据大小
+    unsigned char* frameData; // 帧数据
+} VideoFrame;
+
+
 // 定义协议的消息类型
 enum MessageType {
     TYPE_STUDENT = 1, // 学生类型
+    TYPE_VIDEO = 2,   // 视频类型
     // 可以定义其他类型...
 };
 
@@ -39,22 +48,28 @@ void serializeStruct(const void* data, size_t dataSize, char* buffer, enum Messa
 }
 
 // 反序列化字节流到结构体
-void deserializeStruct(const char* buffer, void* data, size_t dataSize, enum MessageType* type) {
+void deserializeHeaderStruct(const char* buffer, size_t *dataSize, enum MessageType* type) {
     MessageHeader header;
     memcpy(&header, buffer, sizeof(MessageHeader));
 
     // 提取消息类型和数据大小
     *type = header.type;
-    size_t receivedDataSize = header.dataSize;
+    *dataSize = header.dataSize; 
+}
 
+// 反序列化字节流到结构体
+void deserializeStudentStruct(const char* buffer, void* data, size_t dataSize, size_t recvSize) {
+    
     // 检查数据大小是否一致
-    if (receivedDataSize != dataSize) {
+    std::cout <<"recv size : "<<recvSize<<", datasize : "<< dataSize<<std::endl;
+
+    if (recvSize != dataSize) {
         fprintf(stderr, "Received data size doesn't match the expected size.\n");
         return;
     }
 
     // 将数据拷贝到结构体
-    memcpy(data, buffer + sizeof(MessageHeader), dataSize);
+    memcpy(data, buffer, dataSize);
 }
 
 // 创建TCP服务器
@@ -127,18 +142,19 @@ void receiveData(int clientSocket) {
 
     enum MessageType type;
     size_t dataSize;
-    deserializeStruct(buffer, &dataSize, sizeof(size_t), &type);
+    deserializeHeaderStruct(buffer, &dataSize, &type);
 
     // 根据消息类型处理数据
     if (type == TYPE_STUDENT) {
         // 接收学生结构体数据
-        if (recv(clientSocket, buffer, dataSize, 0) == -1) {
+        size_t recv_size =  recv(clientSocket, buffer, dataSize, 0);
+        if ( recv_size == -1) {
             perror("Failed to receive student data");
             return;
         }
 
         Student student;
-        deserializeStruct(buffer, &student, sizeof(Student), &type);
+        deserializeStudentStruct(buffer, &student, sizeof(Student), recv_size);
 
         // 处理接收到的学生数据
         printf("Received student data:\n");
@@ -163,12 +179,9 @@ void sendData(int serverSocket, const void* data, size_t dataSize, enum MessageT
         return;
     }
 }
-
 int main() {
     int port = 12345;
     const char* serverIP = "127.0.0.1";
-
-   
 
     // 创建客户端
     int clientSocket = createClient(serverIP, port);
@@ -178,6 +191,10 @@ int main() {
 
     // 客户端发送数据
     std::cout <<"sizeof(Student) : "<<sizeof(student)<< std::endl;
+    printf("Send student data:\n");
+    printf("ID: %d\n", student.id);
+    printf("Name: %s\n", student.name);
+    printf("Score: %.2f\n", student.score);
     sendData(clientSocket, &student, sizeof(Student), TYPE_STUDENT);
 
     // 关闭套接字
